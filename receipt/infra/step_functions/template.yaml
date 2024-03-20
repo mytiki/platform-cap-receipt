@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: Extract data from receipt images.
 
@@ -6,21 +6,17 @@ Resources:
   StateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
-      Name: 
+      Name: publish-data-receipt-textract
       Type: STANDARD
-      Role: AssumeRole
       DefinitionUri: ../../states/extract_receipt.json
       Tracing:
         Enabled: true
-  Role:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: AssumeRole
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action: sts:AssumeRole
-            Principal:
-              Service:
-                - states.amazonaws.com
+      Events:
+        S3Event:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              detail:
+                bucket:
+                  name:
+                    - com.mytiki.publish.data.images.test
