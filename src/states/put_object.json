@@ -1,11 +1,11 @@
-{ 
+{
   "PutObject": {
     "Type": "Task",
     "End": true,
     "Parameters": {
       "Body.$": "$.analyze",
       "Bucket": "${result_bucket}",
-      "Key.$": "$.detail.object.key"
+      "Key.$": "States.Format('result/{}', States.StringSplit($.detail.object.key, 'upload/')[1])"
     },
     "Resource": "arn:aws:states:::aws-sdk:s3:putObject"
   }
