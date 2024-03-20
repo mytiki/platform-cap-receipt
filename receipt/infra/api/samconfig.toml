@@ -1,0 +1,22 @@
+version = 0.1
+
+[default.global.parameters]
+stack_name = "publish-data-receipt"
+region = "us-east-2"
+LambdaArn = "arn:aws:lambda:us-east-2:920781344533:function:core-aws-authorizer"
+S3BucketPrefix = "com.mytiki.publish.data.images.test"
+
+[default.build.parameters]
+beta_features = true
+
+[default.sync.parameters]
+beta_features = true
+
+[default.deploy.parameters]
+confirm_changeset = false
+capabilities = [
+    "CAPABILITY_IAM",
+    "CAPABILITY_AUTO_EXPAND"
+]
+image_repositories = []
+parameter_overrides = []

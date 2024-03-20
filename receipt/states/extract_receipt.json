@@ -1,0 +1,30 @@
+{
+  "Comment": "Extract data from receipt",
+  "StartAt": "AnalyzeExpense",
+  "States": {
+    "AnalyzeExpense": {
+      "Type": "Task",
+      "Parameters": {
+        "Document": {
+          "S3Object": {
+            "Bucket.$": "$.detail.bucket.name",
+            "Name.$": "$.detail.object.key"
+          }
+        }
+      },
+      "Resource": "arn:aws:states:::aws-sdk:textract:analyzeExpense",
+      "Next": "PutObject",
+      "ResultPath": "$.analyze"
+    },
+    "PutObject": {
+      "Type": "Task",
+      "End": true,
+      "Parameters": {
+        "Body.$": "$.analyze",
+        "Bucket": "mytiki-ricardo-output-test",
+        "Key.$": "$.detail.object.key"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:s3:putObject"
+    }
+  }
+}
