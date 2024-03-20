@@ -1,0 +1,5 @@
+{
+  "Comment": "Extract data from receipt",
+  "StartAt": "AnalyzeExpense",
+  "States": {}
+}

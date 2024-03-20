@@ -1,0 +1,12 @@
+{ 
+  "PutObject": {
+    "Type": "Task",
+    "End": true,
+    "Parameters": {
+      "Body.$": "$.analyze",
+      "Bucket": "${result_bucket}",
+      "Key.$": "$.detail.object.key"
+    },
+    "Resource": "arn:aws:states:::aws-sdk:s3:putObject"
+  }
+}
