@@ -1,4 +1,4 @@
-{ 
+{
   "AnalyzeExpense": {
     "Type": "Task",
     "Parameters": {
@@ -10,7 +10,7 @@
       }
     },
     "Resource": "arn:aws:states:::aws-sdk:textract:analyzeExpense",
-    "Next": "PutObject",
+    "Next": "Pass",
     "ResultPath": "$.analyze"
   }
 }
