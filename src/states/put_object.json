@@ -5,7 +5,7 @@
     "Parameters": {
       "Body.$": "$.analyze",
       "Bucket": "${result_bucket}",
-      "Key.$": "States.Format('result/{}', States.ArrayGetItem(States.StringSplit($.detail.object.key, 'upload/'), 1))"
+      "Key.$": "States.Format('results/{}/{}/{}/{}', States.ArrayGetItem(States.StringSplit($.detail.object.key, '/'),1), States.ArrayGetItem(States.StringSplit($.detail.object.key, '/'),2),States.ArrayGetItem(States.StringSplit($.detail.object.key, '/'),3),States.ArrayGetItem(States.StringSplit($.detail.object.key, '/'),4))"
     },
    "Resource": "arn:aws:states:::aws-sdk:s3:putObject"
   }
