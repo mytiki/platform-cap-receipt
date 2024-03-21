@@ -7,6 +7,10 @@ Parameters:
     Description: The name of the project.
     Type: String
     Default: publish-data-receipt
+  Authorizer:
+    Description: The arn of the Lambda function for JWT Request authorization.
+    Type: String
+    Default: arn:aws:lambda:us-east-2:920781344533:function:core-aws-authorizer
 
 Resources:
   Bucket:
@@ -23,7 +27,7 @@ Resources:
       Name: !Ref Name
       Role: !GetAtt Role.Arn
       Type: STANDARD
-      DefinitionUri: ../../out/state_machine.json
+      DefinitionUri: ../out/state_machine.json
       DefinitionSubstitutions:
         result_bucket: !Ref Bucket
       Tracing:
@@ -39,9 +43,9 @@ Resources:
           Type: CloudWatchEvent
           Properties:
             Pattern:
-              source: 
+              source:
                 - aws.s3
-              detail-type: 
+              detail-type:
                 - "Object Created"
               detail:
                 bucket:
@@ -50,7 +54,56 @@ Resources:
                 object:
                   key:
                     - wildcard: upload/*
-  
+
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Ref Name
+      StageName: latest
+      TracingEnabled: true
+      Auth:
+        Authorizers:
+          CoreAwsAuthorizer:
+            DisableFunctionDefaultPermissions: True
+            FunctionArn: !Ref Authorizer
+            FunctionPayloadType: REQUEST
+            Identity:
+              Headers:
+                - Authorization
+      BinaryMediaTypes:
+        - image/png
+        - image/jpg
+      Cors: "'*'"
+      DefinitionBody:
+        swagger: "2.0"
+        info:
+          title: "TIKI Publish Receipt API"
+          version: "1.0"
+        paths:
+          "/receipt/{receiptId}":
+            post:
+              parameters:
+                - in: "path"
+                  name: "receiptId"
+                  required: true
+                  type: "string"
+              security:
+                - CoreAwsAuthorizer: []
+              x-amazon-apigateway-integration:
+                type: aws
+                credentials: !GetAtt Role.Arn
+                uri: !Sub arn:aws:apigateway:${AWS::Region}:s3:path/mytiki-${AWS::Region}-${Name}/{address}/{receiptId}/{requestId}"
+                passthroughBehavior: "when_no_templates"
+                httpMethod: "POST"
+                requestParameters:
+                  integration.request.path.receiptId: method.request.path.receiptId
+                  integration.request.path.requestId: context.requestId
+                  integration.request.path.address: context.authorizer.id
+                responses:
+                  - statusCode: "200"
+                    responseTemplates:
+                      application/json: ""
+
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
