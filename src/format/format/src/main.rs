@@ -1,156 +1,3 @@
-// use serde::{Serialize, Deserialize};
-// use std::collections::HashMap;
-// use lambda_runtime::{run, service_fn, tracing, Error, LambdaEvent};
-
-// #[derive(Serialize, Deserialize)]
-// #[serde(rename_all = "PascalCase")]
-// pub struct TextractInput {
-//     document_metadata: DocumentMetadata,
-//     expense_documents: Vec<ExpenseDocument>,
-// }
-
-// #[derive(Serialize, Deserialize)]
-// #[serde(rename_all = "PascalCase")]
-// pub struct DocumentMetadata {
-//     pages: i64,
-// }
-
-// #[derive(Serialize, Deserialize)]
-// #[serde(rename_all = "PascalCase")]
-// pub struct ExpenseDocument {
-//     blocks: Vec<Block>,
-//     expense_index: i64,
-//     line_item_groups: Vec<LineItemGroup>,
-//     summary_fields: Vec<SummaryField>,
-// }
-
-// #[derive(Serialize, Deserialize)]
-// #[serde(rename_all = "PascalCase")]
-// pub struct Block {
-//     block_type: BlockType,
-//     geometry: Geometry,
-//     id: String,
-//     relationships: Option<Vec<Relationship>>,
-//     confidence: Option<f64>,
-//     text: Option<String>,
-//     page: Option<i64>,
-//     text_type: Option<TextType>,
-// }
-
-// #[derive(Serialize, Deserialize)]
-// pub enum BlockType {
-//     #[serde(rename = "LINE")]
-//     Line,
-//     #[serde(rename = "PAGE")]
-//     Page,
-//     #[serde(rename = "WORD")]
-//     Word,
-// }
-
-// #[derive(Serialize, Deserialize)]
-// #[serde(rename_all = "PascalCase")]
-// pub struct Geometry {
-//     bounding_box: BoundingBox,
-//     polygon: Vec<Polygon>,
-// }
-
-// #[derive(Serialize, Deserialize)]
-// #[serde(rename_all = "PascalCase")]
-// pub struct BoundingBox {
-//     height: f64,
-//     left: f64,
-//     top: f64,
-//     width: f64,
-// }
-
-// #[derive(Serialize, Deserialize)]
-// #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-// pub struct Polygon {
-//     x: f64,
-//     y: f64,
-// }
-
-// #[derive(Serialize, Deserialize)]
-// #[serde(rename_all = "PascalCase")]
-// pub struct Relationship {
-//     ids: Vec<String>,
-//     #[serde(rename = "Type")]
-//     relationship_type: TypeEnum,
-// }
-
-// #[derive(Serialize, Deserialize)]
-// pub enum TypeEnum {
-//     #[serde(rename = "CHILD")]
-//     Child,
-// }
-
-// #[derive(Serialize, Deserialize)]
-// pub enum TextType {
-//     #[serde(rename = "PRINTED")]
-//     Printed,
-// }
-
-
-
-
-// #[derive(Serialize, Deserialize)]
-// #[serde(rename_all = "PascalCase")]
-// pub struct StateResponse {
-//     document_metadata: DocumentMetadata,
-//     expense_documents: Vec<StateResponseExpenseDocument>,
-// }
-
-// #[derive(Serialize, Deserialize)]
-// #[serde(rename_all = "PascalCase")]
-// pub struct StateResponseBlock {
-//     confidence: f64,
-//     text: String,
-// }
-
-
-
-// // Function to process summary fields
-
-
-// // Main function
-// async fn function_handler(event: &LambdaEvent<TextractInput>) -> Result<StateResponse, Error> {
-//     // Extracting data from TextractInput
-//     let document_metadata = event.payload.document_metadata;
-//     let expense_documents = event.payload.expense_documents.iter().map(|expense_doc| {
-//         // Processing blocks
-//         let blocks = process_blocks(&expense_doc.blocks);
-//         // Processing line item groups
-//         let line_item_groups = process_line_item_groups(&expense_doc.line_item_groups);
-//         // Processing summary fields
-//         let summary_fields = process_summary_fields(&expense_doc.summary_fields);
-
-//         // Constructing ExpenseDocument
-//         ExpenseDocument {
-//             blocks,
-//             expense_index: expense_doc.expense_index,
-//             line_item_groups,
-//             summary_fields,
-//         }
-//     }).collect();
-
-//     // Constructing StateResponse
-//     let state_response = StateResponse {
-//         document_metadata,
-//         expense_documents,
-//     };
-
-//     Ok(state_response)
-// }
-
-
-// #[tokio::main]
-// async fn main() -> Result<(), Error> {
-//     tracing::init_default_subscriber();
-
-//     run(service_fn(function_handler)).await
-// }
-
-
 use serde::{self, Serialize, Deserialize};
 use std::collections::HashMap;
 
@@ -299,6 +146,11 @@ pub struct StateResponseSummaryField {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
+struct SummaryFieldsWrapper {
+    summary_fields: Vec<SummaryField>,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct SummaryField {
     group_properties: Option<Vec<GroupProperty>>,
     page_number: i64,
@@ -322,6 +174,29 @@ pub struct StateResponseExpenseDocument {
     expense_index: i64,
     line_item_groups: Vec<LineItemGroup>,
     summary_fields: Vec<HashMap<String, StateResponseSummaryField>>,
+}
+
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct DocumentMetadata {
+    pages: i64,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct StateResponse {
+    document_metadata: DocumentMetadata,
+    expense_documents: Vec<StateResponseExpenseDocument>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct ExpenseDocument {
+    blocks: Vec<Block>,
+    expense_index: i64,
+    line_item_groups: Vec<LineItemGroup>,
+    summary_fields: Vec<SummaryField>,
 }
 
 
@@ -409,10 +284,6 @@ fn process_summary_fields(summary_fields: &[SummaryField]) -> Vec<HashMap<String
         })
         .collect()
 }
-
-
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1039,8 +910,7 @@ mod tests {
     fn test_process_summary(){
         let json_str = r#"
         {
-            "SummaryFields": [
-                {
+            "SummaryFields": [{
                     "GroupProperties": [
                         {
                             "Id": "9c053dc8-7cc1-4232-a8a4-04a188b0d047",
@@ -1220,13 +1090,15 @@ mod tests {
                         "Text": "ND"
                     }
                 }
-            ]
-        }        
+                ]
+        }       
         "#; 
 
-        let summary: SummaryField  = serde_json::from_str(json_str).unwrap();
+        let summary: SummaryFieldsWrapper  = serde_json::from_str(json_str).unwrap();
 
-        process_summary_fields(&vec![summary]);
+        let result = process_summary_fields(&summary.summary_fields);
+
+        assert_eq!(result.len(), 4);
 
     }
 
