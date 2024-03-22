@@ -106,7 +106,7 @@ Resources:
                   headers:
                     Access-Control-Allow-Origin:
                       type: "string"
-                    Access-Control-Max-Age:
+                    Access-Control-Allow-Methods:
                       type: "string"
                     Access-Control-Allow-Headers:
                       type: "string"
@@ -121,10 +121,15 @@ Resources:
                   integration.request.path.requestId: context.requestId
                   integration.request.path.address: context.authorizer.id
                 responses:
-                  "2\\d{2}":
+                  default:
                     statusCode: "200"
-                   
-
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'POST, OPTIONS, GET'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type, User-Agent, Authorization'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+                    responseTemplates:
+                      application/json: "{}"
+        
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
