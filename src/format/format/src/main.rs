@@ -199,6 +199,22 @@ pub struct ExpenseDocument {
     summary_fields: Vec<SummaryField>,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct InputData{
+    blocks: Vec<Block>, 
+    line_item_groups: Vec<LineItemGroup>, 
+    summary_fields: [SummaryField]
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct OutputData{
+    blocks: Vec<StateResponseBlock>, 
+    line_item_groups: Vec<StateResponseLineItemGroup>, 
+    summary_fields:  Vec<HashMap<String, StateResponseSummaryField>>
+}
+
 
 // Function to process blocks
 fn process_blocks(blocks: &Vec<Block>) -> Vec<StateResponseBlock> {
@@ -284,6 +300,28 @@ fn process_summary_fields(summary_fields: &[SummaryField]) -> Vec<HashMap<String
         })
         .collect()
 }
+
+// Handler function
+fn function_handler(data: InputData) {
+    let processed_blocks = process_blocks(data.blocks);
+
+    let processed_line_item_groups = process_line_item_groups(data.line_item_groups);
+
+    let processed_summary_fields = process_summary_fields(data.summary_fields);
+
+    OutputData{
+        blocks:  processed_blocks,
+        line_item_groups: processed_line_item_groups, 
+        summary_fields:  processed_summary_fields
+    }
+    
+}
+
+fn main(data: InputData){
+    function_handler(data)
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
