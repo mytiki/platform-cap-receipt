@@ -1,0 +1,10 @@
+{
+  "Pass": {
+    "Type": "Pass",
+    "Next": "PutObject",
+    "Parameters": {
+      "pieces.$": "States.StringSplit($.detail.object.key, '/')"
+    },
+    "ResultPath": "$.path"
+  }
+}
