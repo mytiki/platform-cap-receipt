@@ -1,23 +1,8 @@
 use async_trait::async_trait;
 use aws_sdk_s3::operation::get_object::GetObjectError;
 use aws_sdk_s3::Client as S3Client;
-use aws_sdk_s3::primitives::ByteStream;
-use lambda_runtime::tracing;
-use lambda_runtime::tracing::subscriber::fmt::format::Json;
-use serde::Deserialize;
-use serde_json::{json, Value};
+use lambda_http::tracing;
 use serde_json::de::Read;
-
-#[derive(Deserialize, Debug)]
-pub(crate) struct ReceiptData {
-    name: String,
-    age: u8,
-}
-impl ReceiptData {
-    pub fn to_json(&self) -> String {
-        return json!({"name": self.name,"age": self.age}).to_string()
-    }
-}
 
 #[async_trait]
 pub trait GetFile {
@@ -26,12 +11,7 @@ pub trait GetFile {
 
 #[async_trait]
 pub trait GetFileList {
-    async fn get_file_list(&self, bucket: &str) -> Result<Vec<ReceiptData>, GetObjectError>;
-}
-
-#[async_trait]
-pub trait PutFile {
-    async fn put_file(&self, bucket: &str, key: &str, bytes: Vec<u8>) -> Result<String, String>;
+    async fn get_file_list(&self, bucket: &str) -> Result<Vec<String>, GetObjectError>;
 }
 
 #[async_trait]
@@ -60,8 +40,8 @@ impl GetFile for S3Client {
 
 #[async_trait]
 impl GetFileList for S3Client {
-    async fn get_file_list(&self, bucket: &str) -> Result<Vec<ReceiptData>, GetObjectError> {
-        let mut json_list: Vec<ReceiptData> =  Vec::new();
+    async fn get_file_list(&self, bucket: &str) -> Result<Vec<String>, GetObjectError> {
+        let mut json_list: Vec<String> =  Vec::new();
         let mut response = self
             .list_objects_v2()
             .bucket(bucket.to_owned())
@@ -74,7 +54,7 @@ impl GetFileList for S3Client {
                     for object in output.contents.unwrap_or_default() {
                         let key = object.key.unwrap();
                         let byte = self.get_file(bucket, key).await?;
-                        let json_file:ReceiptData = serde_json::from_slice(&*byte).unwrap();
+                        let json_file:String = serde_json::from_slice(&*byte).unwrap();
                         json_list.push(json_file);
                     }
                     Ok(json_list)
@@ -88,19 +68,5 @@ impl GetFileList for S3Client {
             }
         }
         Ok(json_list)
-    }
-}
-
-#[async_trait]
-impl PutFile for S3Client {
-    async fn put_file(&self, bucket: &str, key: &str, vec: Vec<u8>) -> Result<String, String> {
-        tracing::info!("put file bucket {}, key {}", bucket, key);
-        let bytes = ByteStream::from(vec);
-        let result = self.put_object().bucket(bucket).key(key).body(bytes).send().await;
-
-        match result {
-            Ok(_) => Ok(format!("Uploaded a file with key {} into {}", key, bucket)),
-            Err(err) => Err(err.into_service_error().meta().message().unwrap().to_string()),
-        }
     }
 }

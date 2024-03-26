@@ -3,6 +3,10 @@
  * MIT license. See LICENSE file in root directory.
  */
 
+use super::block_type::{self, BlockType};
+use super::
+use serde::{Deserialize, Serialize};
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Block {
