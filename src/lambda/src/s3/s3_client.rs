@@ -2,7 +2,6 @@ use async_trait::async_trait;
 use aws_sdk_s3::operation::get_object::GetObjectError;
 use aws_sdk_s3::Client as S3Client;
 use lambda_http::tracing;
-use serde_json::de::Read;
 
 #[async_trait]
 pub trait GetFile {

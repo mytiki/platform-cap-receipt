@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::format::{block::{self, response_block::ResponseBlock}, line_item::group_response::GroupResponse};
+use crate::format::{block::response_block::ResponseBlock, line_item::group_response::GroupResponse};
 
 use super::field_response::FieldResponse;
 
