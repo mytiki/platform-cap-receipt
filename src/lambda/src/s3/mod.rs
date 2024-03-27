@@ -7,7 +7,7 @@ use aws_sdk_s3::Client as S3Client;
 use lambda_http::lambda_runtime::Error;
 use s3_client::{GetFile, GetFileList};
 
-pub async fn get(provider: String, address: String, receipt_id: String) -> Result<Vec<String>, Error> {
+pub async fn get(provider: &String, address: &String, receipt_id: &String) -> Result<Vec<String>, Error> {
   
   let bucket = env::var("TIKI_BUCKET").expect("TIKI_BUCKET is not set");
 

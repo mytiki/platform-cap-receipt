@@ -3,6 +3,6 @@
  * MIT license. See LICENSE file in root directory.
  */
 
-mod bouding_box;
-mod geometry;
-mod polygon;
+pub mod bouding_box;
+pub mod geometry;
+pub mod polygon;

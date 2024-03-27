@@ -3,19 +3,20 @@
  * MIT license. See LICENSE file in root directory.
  */
 
-use super::block_type::{self, BlockType};
-use super::
+use super::{block_type::BlockType, relationship::Relationship, text_type::TextType};
+use super::super::geometry::geometry::Geometry;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Block {
-    block_type: BlockType,
-    geometry: Geometry,
-    id: String,
-    relationships: Vec<Relationship>,
-    confidence: f64,
-    text: String,
-    page: Option<i64>,
-    text_type: Option<TextType>,
+    pub block_type: BlockType,
+    pub geometry: Geometry,
+    pub id: String,
+    pub relationships: Vec<Relationship>,
+    pub confidence: f64,
+    pub text: String,
+    pub page: Option<i64>,
+    pub text_type: Option<TextType>,
 }

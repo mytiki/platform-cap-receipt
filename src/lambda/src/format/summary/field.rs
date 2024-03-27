@@ -3,14 +3,20 @@
  * MIT license. See LICENSE file in root directory.
  */
 
+use serde::{Serialize, Deserialize};
+
+use crate::{format::type_class::TypeClass, util::detection::Detection};
+
+use super::group_property::GroupProperty;
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct SummaryField {
-    group_properties: Option<Vec<GroupProperty>>,
-    page_number: i64,
+    pub group_properties: Option<Vec<GroupProperty>>,
+    pub page_number: i64,
     #[serde(rename = "Type")]
-    summary_field_type: Option<TypeClass>,
-    value_detection: Detection,
-    label_detection: Option<Detection>,
+    pub summary_field_type: Option<TypeClass>,
+    pub value_detection: Detection,
+    pub label_detection: Option<Detection>,
 }
 

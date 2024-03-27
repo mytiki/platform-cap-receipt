@@ -3,7 +3,17 @@
  * MIT license. See LICENSE file in root directory.
  */
 
-fn process(summary_fields: &[SummaryField]) -> Vec<HashMap<String, StateResponseSummaryField>> {
+pub mod field;
+pub mod field_wrapper;
+pub mod group_property;
+
+use std::collections::HashMap;
+
+use field::SummaryField;
+
+use crate::util::field_response::FieldResponse;
+
+pub fn process(summary_fields: &[SummaryField]) -> Vec<HashMap<String, FieldResponse>> {
   summary_fields
       .iter()
       .map(|summary_field| {
@@ -21,7 +31,7 @@ fn process(summary_fields: &[SummaryField]) -> Vec<HashMap<String, StateResponse
 
           summary_map.insert(
               key,
-              StateResponseSummaryField {
+              FieldResponse {
                   confidence_key,
                   confidence_value: summary_field.value_detection.confidence,
                   value: summary_field.value_detection.text.clone(),
@@ -222,9 +232,9 @@ fn test_process_summary(){
     }       
     "#; 
 
-    let summary: SummaryFieldsWrapper  = serde_json::from_str(json_str).unwrap();
+    let summary: field_wrapper::SummaryFieldsWrapper = serde_json::from_str(json_str).unwrap();
 
-    let result = process_summary_fields(&summary.summary_fields);
+    let result = process(&summary.summary_fields);
 
     assert_eq!(result.len(), 4);
 

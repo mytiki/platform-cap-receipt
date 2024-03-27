@@ -3,13 +3,15 @@
  * MIT license. See LICENSE file in root directory.
  */
 
-mod block;
-mod response_block;
-mod block_type;
-mod relationship;
-mod text_type;
-mod type_enum;
+pub mod block;
+pub mod response_block;
+pub mod block_type;
+pub mod relationship;
+pub mod text_type;
+pub mod type_enum;
+
 use block::Block;
+
 use response_block::ResponseBlock;
 
 pub fn process(blocks: &Vec<Block>) -> Vec<ResponseBlock> {

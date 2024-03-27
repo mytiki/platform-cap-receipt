@@ -3,56 +3,101 @@
  * MIT license. See LICENSE file in root directory.
  */
 
-fn process(line_item_groups: &Vec<LineItemGroup>) -> Vec<StateResponseLineItemGroup> {
-  line_item_groups.iter().map(|line_item_group| {
-      StateResponseLineItemGroup {
-          line_item_group_index: line_item_group.line_item_group_index,
-          line_items: line_item_group.line_items.iter().map(|line_item| {
-              let line_item_expense_fields: Vec<StateResponseLineItemExpenseField> = line_item.line_item_expense_fields.iter().map(|field| {
-                  let mut expense_field = StateResponseLineItemExpenseField {
-                      product_code: None,
-                      item: None,
-                      expense_row: None,
-                      price: None
-                  };
-                  match field.line_item_expense_field_type.text.as_str()  {
-                      "PRODUCT_CODE" =>  expense_field.product_code = Some(StateResponseSummaryField {
-                          confidence_key: field.line_item_expense_field_type.confidence,
-                          confidence_value: field.value_detection.confidence,
-                          value: field.value_detection.text.clone(),
-                      }),
-                      "ITEM" =>  expense_field.item = Some(StateResponseSummaryField {
-                          confidence_key: field.line_item_expense_field_type.confidence,
-                          confidence_value: field.value_detection.confidence,
-                          value: field.value_detection.text.clone(),
-                      }),
-                      "EXPENSE_ROW" =>  expense_field.expense_row = Some(StateResponseSummaryField {
-                          confidence_key: field.line_item_expense_field_type.confidence,
-                          confidence_value: field.value_detection.confidence,
-                          value: field.value_detection.text.clone(),
-                      }),
-                      "PRICE" =>  expense_field.price = Some(StateResponseSummaryField {
-                          confidence_key: field.line_item_expense_field_type.confidence,
-                          confidence_value: field.value_detection.confidence,
-                          value: field.value_detection.text.clone(),
-                      }),
-                      _ => {} // Handling other cases if needed
-                  }
-                  expense_field
-              }).collect();
-              StateResponseLineItem { line_item_expense_fields }
-          }).collect()
-      }
-  }).collect()
+pub mod expense_field;
+pub mod expense_field_response;
+pub mod group;
+pub mod group_response;
+pub mod line_item;
+pub mod line_item_response;
+
+use group::Group;
+use group_response::GroupResponse;
+
+use crate::util::field_response::FieldResponse;
+
+use self::{expense_field_response::ExpenseFieldResponse, line_item_response::LineItemResponse};
+
+pub fn process(line_item_groups: &Vec<Group>) -> Vec<GroupResponse> {
+    line_item_groups
+        .iter()
+        .map(|line_item_group| {
+            GroupResponse {
+                line_item_group_index: line_item_group.line_item_group_index,
+                line_items: line_item_group
+                    .line_items
+                    .iter()
+                    .map(|line_item| {
+                        let line_item_expense_fields: Vec<ExpenseFieldResponse> = line_item
+                            .line_item_expense_fields
+                            .iter()
+                            .map(|field| {
+                                let mut expense_field = ExpenseFieldResponse {
+                                    product_code: None,
+                                    item: None,
+                                    expense_row: None,
+                                    price: None,
+                                };
+                                match field.line_item_expense_field_type.text.as_str() {
+                                    "PRODUCT_CODE" => {
+                                        expense_field.product_code =
+                                            Some(FieldResponse {
+                                                confidence_key: field
+                                                    .line_item_expense_field_type
+                                                    .confidence,
+                                                confidence_value: field.value_detection.confidence,
+                                                value: field.value_detection.text.clone(),
+                                            })
+                                    }
+                                    "ITEM" => {
+                                        expense_field.item = Some(FieldResponse {
+                                            confidence_key: field
+                                                .line_item_expense_field_type
+                                                .confidence,
+                                            confidence_value: field.value_detection.confidence,
+                                            value: field.value_detection.text.clone(),
+                                        })
+                                    }
+                                    "EXPENSE_ROW" => {
+                                        expense_field.expense_row =
+                                            Some(FieldResponse {
+                                                confidence_key: field
+                                                    .line_item_expense_field_type
+                                                    .confidence,
+                                                confidence_value: field.value_detection.confidence,
+                                                value: field.value_detection.text.clone(),
+                                            })
+                                    }
+                                    "PRICE" => {
+                                        expense_field.price = Some(FieldResponse {
+                                            confidence_key: field
+                                                .line_item_expense_field_type
+                                                .confidence,
+                                            confidence_value: field.value_detection.confidence,
+                                            value: field.value_detection.text.clone(),
+                                        })
+                                    }
+                                    _ => {} // Handling other cases if needed
+                                }
+                                expense_field
+                            })
+                            .collect();
+                        LineItemResponse {
+                            line_item_expense_fields,
+                        }
+                    })
+                    .collect(),
+            }
+        })
+        .collect()
 }
 
 #[test]
 fn test_process_line_items() {
     let json_str = r#" {
-            "LineItemGroupIndex": 1,
+            "GroupIndex": 1,
             "LineItems": [
                 {
-                    "LineItemExpenseFields": [
+                    "ExpenseFields": [
                         {
                             "PageNumber": 1,
                             "Type": {
@@ -204,7 +249,7 @@ fn test_process_line_items() {
                     ]
                 },
                 {
-                    "LineItemExpenseFields": [
+                    "ExpenseFields": [
                         {
                             "PageNumber": 1,
                             "Type": {
@@ -356,7 +401,7 @@ fn test_process_line_items() {
                     ]
                 },
                 {
-                    "LineItemExpenseFields": [
+                    "ExpenseFields": [
                         {
                             "PageNumber": 1,
                             "Type": {
@@ -511,9 +556,9 @@ fn test_process_line_items() {
         }
     "#;
 
-    let line_items: LineItemGroup = serde_json::from_str(json_str).unwrap();
+    let line_items: Group = serde_json::from_str(json_str).unwrap();
 
-    let result = process_line_item_groups(&vec![line_items]);
+    let result = process(&vec![line_items]);
 
     assert_eq!(result.len(), 1);
 
@@ -522,7 +567,7 @@ fn test_process_line_items() {
     assert_eq!(result[0].line_items.len(), 3);
 
     let line_item_expense_fields = &result[0].line_items[0].line_item_expense_fields;
-    assert_eq!(line_item_expense_fields.len(), 4); 
+    assert_eq!(line_item_expense_fields.len(), 4);
 
     for field in line_item_expense_fields {
         match field.product_code {
@@ -545,10 +590,7 @@ fn test_process_line_items() {
         }
         match field.expense_row {
             Some(ref summary_field) => {
-                assert_eq!(
-                    summary_field.value,
-                    "6 WING PLATE 020108870398 3.98 P"
-                );
+                assert_eq!(summary_field.value, "6 WING PLATE 020108870398 3.98 P");
             }
             None => {}
         }

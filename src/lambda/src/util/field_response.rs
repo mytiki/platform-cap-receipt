@@ -3,10 +3,12 @@
  * MIT license. See LICENSE file in root directory.
  */
 
+use serde::{Serialize, Deserialize};
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct StateResponseSummaryField {
-    confidence_key: f64,
-    confidence_value: f64,
-    value: String,
+pub struct FieldResponse {
+    pub confidence_key: f64,
+    pub confidence_value: f64,
+    pub value: String,
 }

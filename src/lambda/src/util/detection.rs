@@ -3,10 +3,14 @@
  * MIT license. See LICENSE file in root directory.
  */
 
+use serde::{Deserialize, Serialize};
+
+use crate::format::geometry::geometry::Geometry;
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Detection {
-    confidence: f64,
-    geometry: Geometry,
-    text: String,
+    pub confidence: f64,
+    pub geometry: Geometry,
+    pub text: String,
 }

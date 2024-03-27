@@ -8,6 +8,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct TypeClass {
-    confidence: f64,
-    text: String,
+    pub confidence: f64,
+    pub text: String,
 }
