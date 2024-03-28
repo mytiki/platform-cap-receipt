@@ -1,7 +1,7 @@
 version = 0.1
 
 [default.global.parameters]
-stack_name = "extract-receipt-image"
+stack_name = "publish-receipt-data"
 s3_bucket = "com.mytiki.core.bucket"
 s3_prefix = "publish/data"
 region = "us-east-2"
@@ -13,5 +13,13 @@ capabilities = [
     "CAPABILITY_NAMED_IAM",
     "CAPABILITY_AUTO_EXPAND"
 ]
+
+
+[default.build.parameters]
+beta_features = true
+
+[default.sync.parameters]
+beta_features = true
+
 image_repositories = []
 parameter_overrides = []

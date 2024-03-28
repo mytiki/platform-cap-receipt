@@ -1,6 +1,9 @@
 # Fuckin Macs
 .DS_Store
 
+#vscode
+.vscode
+
 # IntelliJ
 .idea
 *.iml

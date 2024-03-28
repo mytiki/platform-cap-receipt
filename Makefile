@@ -1,6 +1,6 @@
 .PHONY: compile build delete clean
 
-compile: src/state_machine.json $(wildcard src/states/*.json)
+compile: src/state_machine/state_machine.json $(wildcard src/state_machine/states/*.json)
 	mkdir -p out
 	set -x; \
     jq -s '.[0] as $$base | .[1:] | reduce .[] as $$state ($$base; .States += $$state)' $^ > out/state_machine.json

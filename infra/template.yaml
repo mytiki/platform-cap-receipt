@@ -55,7 +55,39 @@ Resources:
                   key:
                     - wildcard: upload/*
 
-  ApiGatewayApi:
+  Function:
+      Type: AWS::Serverless::Function
+      Metadata:
+        BuildMethod: rust-cargolambda
+      Properties:
+        FunctionName: core-aws-authorizer
+        Description: Handles JWT authentication for API Gateway endpoints.
+        VersionDescription: 0.0.1
+        CodeUri: ../src/api/lambda
+        Handler: bootstrap
+        Runtime: provided.al2
+        MemorySize: 1024
+        Timeout: 900
+        Environment:
+          Variables:
+            TIKI_JWK: '{"kty":"EC","use":"sig","crv":"P-256","kid":"0d2dbad0-81f5-4625-94a8-91e839581ac8","x":"vcM5IpNurycR5RbOGueTZAWp-FQfAwGUTVY1YwNli_c","y":"-Ag2sVft6NAcSxkvHc2gS5vcB3bdrB66pDPFuS_6u1U","alg":"ES256"}'
+            TIKI_ISSUER: https://mytiki.com
+        Tracing: Active
+        Architectures:
+          - x86_64
+        AutoPublishAlias: latest
+        # ProvisionedConcurrencyConfig:
+        #   ProvisionedConcurrentExecutions: 2
+        Policies:
+          - Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: "*"
+
+  Api:
     Type: AWS::Serverless::Api
     Properties:
       Name: !Ref Name
@@ -86,49 +118,10 @@ Resources:
         AllowHeaders: "'Content-Type, User-Agent, Authorization'"
         AllowOrigin: "'*'"
       DefinitionBody:
-        swagger: "2.0"
-        info:
-          title: "TIKI Publish Receipt API"
-          version: "1.0"
-        paths:
-          "/receipt/{receiptId}":
-            post:
-              parameters:
-                - in: "path"
-                  name: "receiptId"
-                  required: true
-                  type: "string"
-              security:
-                - CoreAwsAuthorizer: []
-              responses: 
-                '200': 
-                  description: OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: "string"
-                    Access-Control-Allow-Methods:
-                      type: "string"
-                    Access-Control-Allow-Headers:
-                      type: "string"
-              x-amazon-apigateway-integration:
-                type: aws
-                credentials: !GetAtt Role.Arn
-                uri: !Sub arn:aws:apigateway:${AWS::Region}:s3:path/mytiki-${AWS::Region}-${Name}/upload/{address}/{receiptId}/{requestId}
-                passthroughBehavior: "when_no_templates"
-                httpMethod: "PUT"
-                requestParameters:
-                  integration.request.path.receiptId: method.request.path.receiptId
-                  integration.request.path.requestId: context.requestId
-                  integration.request.path.address: context.authorizer.id
-                responses:
-                  default:
-                    statusCode: "200"
-                    responseParameters:
-                      method.response.header.Access-Control-Allow-Methods: "'POST, OPTIONS, GET'"
-                      method.response.header.Access-Control-Allow-Headers: "'Content-Type, User-Agent, Authorization'"
-                      method.response.header.Access-Control-Allow-Origin: "'*'"
-                    responseTemplates:
-                      application/json: "{}"
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: ../src/api/openapi.yaml
         
   LogGroup:
     Type: AWS::Logs::LogGroup
@@ -195,3 +188,12 @@ Resources:
                 Resource: "*"
                 Action:
                   - textract:AnalyzeExpense
+  
+  ConfigLambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    DependsOn:
+      - Function
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: core-aws-authorizer
+      Principal: apigateway.amazonaws.com
