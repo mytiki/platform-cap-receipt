@@ -15,7 +15,7 @@ Resources:
   Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub mytiki-${AWS::Region}-${Name}
+      BucketName: !Sub mytiki-ocean-${AWS::Region}-${Name}
       NotificationConfiguration:
         EventBridgeConfiguration:
           EventBridgeEnabled: true
