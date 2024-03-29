@@ -6,7 +6,7 @@
     "Parameters": {
       "Body.$": "$.analyze",
       "Bucket": "${result_bucket}",
-      "Key.$": "States.Format('result/{}/{}/{}/{}', States.ArrayGetItem($.path.pieces,1), States.ArrayGetItem($.path.pieces,2), States.ArrayGetItem($.path.pieces,3), States.ArrayGetItem($.path.pieces,4))"
+      "Key.$": "States.Format('result/{}/{}/{}', States.ArrayGetItem($.path.pieces,1), States.ArrayGetItem($.path.pieces,2), States.ArrayGetItem($.path.pieces,3))"
     },
     "Resource": "arn:aws:states:::aws-sdk:s3:putObject"
   }

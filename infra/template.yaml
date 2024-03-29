@@ -1,18 +1,80 @@
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Publish receipt data.
-
 Parameters:
   Name:
     Description: The name of the project.
     Type: String
     Default: publish-data-receipt
   Authorizer:
-    Description: The arn of the Lambda function for JWT Request authorization.
+    Description: The ARN of the Lambda function for JWT Request authorization.
     Type: String
     Default: arn:aws:lambda:us-east-2:920781344533:function:core-aws-authorizer
-
 Resources:
+  
+  PublishRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+                - states.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
+  
+  PublishPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: PublishPolicy
+      Roles:
+        - !Ref PublishRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+            Resource: !GetAtt StateMachine.Arn
+          - Effect: Allow
+            Action:
+              - xray:PutTraceSegments
+              - xray:PutTelemetryRecords
+              - xray:GetSamplingRules
+              - xray:GetSamplingTargets
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:GetLogEvents
+              - logs:PutLogEvents
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - logs:DescribeLogGroups
+              - logs:DescribeLogStreams
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:GetObject
+              - s3:GetObjectVersion
+            Resource: !Sub ${Bucket.Arn}/*
+          - Effect: Allow
+            Action:
+              - textract:AnalyzeExpense
+            Resource: '*'
+
+  PublishApiAccount:
+    Type: 'AWS::ApiGateway::Account'
+    Properties:
+      CloudWatchRoleArn: !GetAtt PublishRole.Arn
+
   Bucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -20,24 +82,17 @@ Resources:
       NotificationConfiguration:
         EventBridgeConfiguration:
           EventBridgeEnabled: true
-
+  
   StateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
       Name: !Ref Name
-      Role: !GetAtt Role.Arn
+      Role: !GetAtt PublishRole.Arn
       Type: STANDARD
-      DefinitionUri: ../out/state_machine.json
       DefinitionSubstitutions:
         result_bucket: !Ref Bucket
       Tracing:
         Enabled: true
-      Logging:
-        Level: ERROR
-        IncludeExecutionData: true
-        Destinations:
-          - CloudWatchLogsLogGroup:
-              LogGroupArn: !GetAtt LogGroup.Arn
       Events:
         S3Event:
           Type: CloudWatchEvent
@@ -46,7 +101,7 @@ Resources:
               source:
                 - aws.s3
               detail-type:
-                - "Object Created"
+                - Object Created
               detail:
                 bucket:
                   name:
@@ -54,144 +109,22 @@ Resources:
                 object:
                   key:
                     - wildcard: upload/*
-
-  ApiGatewayApi:
+      DefinitionUri: ../out/state_machine.json
+  
+  PublishApi:
     Type: AWS::Serverless::Api
     Properties:
       Name: !Ref Name
-      
       StageName: latest
       TracingEnabled: true
       MethodSettings:
-      - LoggingLevel: ERROR
-        ResourcePath: '/*'
-        HttpMethod: '*'
-        DataTraceEnabled: true
-        MetricsEnabled: true
-      Auth:
-        Authorizers:
-          CoreAwsAuthorizer:
-            DisableFunctionDefaultPermissions: True
-            FunctionArn: !Ref Authorizer
-            FunctionPayloadType: REQUEST
-            Identity:
-              Headers:
-                - Authorization
-      BinaryMediaTypes:
-        - image/png
-        - image/jpg
-        - image/jpeg
-      Cors:
-        AllowMethods: "'POST, OPTIONS, GET'"
-        AllowHeaders: "'Content-Type, User-Agent, Authorization'"
-        AllowOrigin: "'*'"
+        - LoggingLevel: INFO
+          ResourcePath: "/*"
+          HttpMethod: "*"
+          DataTraceEnabled: true
+          MetricsEnabled: true
       DefinitionBody:
-        swagger: "2.0"
-        info:
-          title: "TIKI Publish Receipt API"
-          version: "1.0"
-        paths:
-          "/receipt/{receiptId}":
-            post:
-              parameters:
-                - in: "path"
-                  name: "receiptId"
-                  required: true
-                  type: "string"
-              security:
-                - CoreAwsAuthorizer: []
-              responses: 
-                '200': 
-                  description: OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: "string"
-                    Access-Control-Allow-Methods:
-                      type: "string"
-                    Access-Control-Allow-Headers:
-                      type: "string"
-              x-amazon-apigateway-integration:
-                type: aws
-                credentials: !GetAtt Role.Arn
-                uri: !Sub arn:aws:apigateway:${AWS::Region}:s3:path/mytiki-${AWS::Region}-${Name}/upload/{address}/{receiptId}/{requestId}
-                passthroughBehavior: "when_no_templates"
-                httpMethod: "PUT"
-                requestParameters:
-                  integration.request.path.receiptId: method.request.path.receiptId
-                  integration.request.path.requestId: context.requestId
-                  integration.request.path.address: context.authorizer.id
-                responses:
-                  default:
-                    statusCode: "200"
-                    responseParameters:
-                      method.response.header.Access-Control-Allow-Methods: "'POST, OPTIONS, GET'"
-                      method.response.header.Access-Control-Allow-Headers: "'Content-Type, User-Agent, Authorization'"
-                      method.response.header.Access-Control-Allow-Origin: "'*'"
-                    responseTemplates:
-                      application/json: "{}"
-        
-  LogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Ref Name
-      RetentionInDays: 30
-
-  Role:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Ref Name
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action: sts:AssumeRole
-            Principal:
-              Service:
-                - states.amazonaws.com
-      Policies:
-        - PolicyName: XRay
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Resource: "*"
-                Action:
-                  - xray:PutTraceSegments
-                  - xray:PutTelemetryRecords
-                  - xray:GetSamplingRules
-                  - xray:GetSamplingTargets
-        - PolicyName: CloudWatch
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Resource: "*"
-                Action:
-                  - logs:CreateLogDelivery
-                  - logs:CreateLogStream
-                  - logs:GetLogDelivery
-                  - logs:UpdateLogDelivery
-                  - logs:DeleteLogDelivery
-                  - logs:ListLogDeliveries
-                  - logs:PutLogEvents
-                  - logs:PutResourcePolicy
-                  - logs:DescribeResourcePolicies
-                  - logs:DescribeLogGroups
-        - PolicyName: S3
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Resource: !Sub ${Bucket.Arn}/*
-                Action:
-                  - s3:PutObject
-                  - s3:GetObject
-                  - s3:GetObjectVersion
-        - PolicyName: Textract
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Resource: "*"
-                Action:
-                  - textract:AnalyzeExpense
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: ../openapi.yaml

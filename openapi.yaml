@@ -1,0 +1,111 @@
+openapi: "3.0.1"
+info:
+  title: "mytiki-us-east-2-publish-data-receipt-API"
+  version: "1.0.0"
+servers:
+- url: "https://publish.mytiki.com/{basePath}"
+  variables:
+    basePath:
+      default: "latest"
+paths:
+  /receipt/{receiptId}:
+    post:
+      parameters:
+      - name: "receiptId"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      security:
+      - CoreAwsAuthorizer: []
+      x-amazon-apigateway-integration:
+        credentials: 
+          Fn::GetAtt: PublishRole.Arn
+        httpMethod: "PUT"
+        uri: 
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:s3:path/mytiki-${AWS::Region}-${Name}/upload/{address}/{receiptId}/{requestId}
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'POST, OPTIONS, GET'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type, User-Agent, Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: "{}"
+        requestParameters:
+          integration.request.path.address: "context.authorizer.id"
+          integration.request.path.receiptId: "method.request.path.receiptId"
+          integration.request.path.requestId: "context.requestId"
+        passthroughBehavior: "when_no_templates"
+        type: "aws"
+    options:
+      parameters:
+      - name: "receiptId"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      x-amazon-apigateway-integration:
+        credentials: 
+          Fn::GetAtt: PublishRole.Arn
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'POST, OPTIONS,GET'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type, User-Agent, Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: "{}\n"
+            contentHandling: "CONVERT_TO_TEXT"
+        requestTemplates:
+          application/json: "{statusCode : 200}"
+        passthroughBehavior: "when_no_match"
+        type: "mock"
+components:
+  securitySchemes:
+    CoreAwsAuthorizer:
+      type: "apiKey"
+      name: "Authorization"
+      in: "header"
+      x-amazon-apigateway-authtype: "custom"
+      x-amazon-apigateway-authorizer:
+        authorizerUri: 
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${Authorizer}/invocations"
+        authorizerResultTtlInSeconds: 300
+        identitySource: "method.request.header.Authorization"
+        type: "request"
+
+x-amazon-apigateway-binary-media-types:
+- "image/jpg"
+- "image/png"
+- "image/jpeg"
