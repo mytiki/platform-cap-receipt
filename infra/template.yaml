@@ -9,72 +9,9 @@ Parameters:
   Authorizer:
     Description: The ARN of the Lambda function for JWT Request authorization.
     Type: String
-    Default: arn:aws:lambda:us-east-2:920781344533:function:core-aws-authorizer
+
+
 Resources:
-  
-  PublishRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - apigateway.amazonaws.com
-                - states.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
-  
-  PublishPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: PublishPolicy
-      Roles:
-        - !Ref PublishRole
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Action:
-              - lambda:InvokeFunction
-            Resource: !GetAtt StateMachine.Arn
-          - Effect: Allow
-            Action:
-              - xray:PutTraceSegments
-              - xray:PutTelemetryRecords
-              - xray:GetSamplingRules
-              - xray:GetSamplingTargets
-            Resource: '*'
-          - Effect: Allow
-            Action:
-              - logs:CreateLogGroup
-              - logs:CreateLogStream
-              - logs:GetLogEvents
-              - logs:PutLogEvents
-            Resource: '*'
-          - Effect: Allow
-            Action:
-              - logs:DescribeLogGroups
-              - logs:DescribeLogStreams
-            Resource: '*'
-          - Effect: Allow
-            Action:
-              - s3:PutObject
-              - s3:GetObject
-              - s3:GetObjectVersion
-            Resource: !Sub ${Bucket.Arn}/*
-          - Effect: Allow
-            Action:
-              - textract:AnalyzeExpense
-            Resource: '*'
-
-  PublishApiAccount:
-    Type: 'AWS::ApiGateway::Account'
-    Properties:
-      CloudWatchRoleArn: !GetAtt PublishRole.Arn
-
   Bucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -82,12 +19,12 @@ Resources:
       NotificationConfiguration:
         EventBridgeConfiguration:
           EventBridgeEnabled: true
-  
+
   StateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
       Name: !Ref Name
-      Role: !GetAtt PublishRole.Arn
+      Role: !GetAtt StateMachineRole.Arn
       Type: STANDARD
       DefinitionSubstitutions:
         result_bucket: !Ref Bucket
@@ -110,8 +47,65 @@ Resources:
                   key:
                     - wildcard: upload/*
       DefinitionUri: ../out/state_machine.json
-  
-  PublishApi:
+
+  StateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: XRay
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                  - xray:GetSamplingRules
+                  - xray:GetSamplingTargets
+                Resource: '*'
+        - PolicyName: Logs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:GetLogEvents
+                  - logs:PutLogEvents
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                Resource: '*'
+        - PolicyName: S3
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                Resource: !Sub ${Bucket.Arn}/*
+        - PolicyName: Textract
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - textract:AnalyzeExpense
+                Resource: '*'
+
+  Api:
     Type: AWS::Serverless::Api
     Properties:
       Name: !Ref Name
@@ -128,3 +122,25 @@ Resources:
           Name: AWS::Include
           Parameters:
             Location: ../openapi.yaml
+
+  ApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
+      Policies:
+        - PolicyName: S3
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: !Sub ${Bucket.Arn}/*

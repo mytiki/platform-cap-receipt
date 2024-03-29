@@ -33,10 +33,10 @@ paths:
       security:
       - CoreAwsAuthorizer: []
       x-amazon-apigateway-integration:
-        credentials: 
-          Fn::GetAtt: PublishRole.Arn
+        credentials:
+          Fn::GetAtt: ApiRole.Arn
         httpMethod: "PUT"
-        uri: 
+        uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:s3:path/mytiki-${AWS::Region}-${Name}/upload/{address}/{receiptId}/{requestId}
         responses:
           default:
@@ -75,8 +75,8 @@ paths:
                 type: "string"
           content: {}
       x-amazon-apigateway-integration:
-        credentials: 
-          Fn::GetAtt: PublishRole.Arn
+        credentials:
+          Fn::GetAtt: ApiRole.Arn
         responses:
           default:
             statusCode: "200"
@@ -99,7 +99,7 @@ components:
       in: "header"
       x-amazon-apigateway-authtype: "custom"
       x-amazon-apigateway-authorizer:
-        authorizerUri: 
+        authorizerUri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${Authorizer}/invocations"
         authorizerResultTtlInSeconds: 300
         identitySource: "method.request.header.Authorization"
