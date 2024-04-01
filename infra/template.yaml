@@ -1,22 +1,20 @@
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Publish receipt data.
-
 Parameters:
   Name:
     Description: The name of the project.
     Type: String
     Default: publish-data-receipt
   Authorizer:
-    Description: The arn of the Lambda function for JWT Request authorization.
+    Description: The ARN of the Lambda function for JWT Request authorization.
     Type: String
-    Default: arn:aws:lambda:us-east-2:920781344533:function:core-aws-authorizer
 
 Resources:
   Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub mytiki-${AWS::Region}-${Name}
+      BucketName: !Sub mytiki-ocean-${AWS::Region}-${Name}
       NotificationConfiguration:
         EventBridgeConfiguration:
           EventBridgeEnabled: true
@@ -25,19 +23,12 @@ Resources:
     Type: AWS::Serverless::StateMachine
     Properties:
       Name: !Ref Name
-      Role: !GetAtt Role.Arn
+      Role: !GetAtt StateMachineRole.Arn
       Type: STANDARD
-      DefinitionUri: ../out/state_machine.json
       DefinitionSubstitutions:
         result_bucket: !Ref Bucket
       Tracing:
         Enabled: true
-      Logging:
-        Level: ERROR
-        IncludeExecutionData: true
-        Destinations:
-          - CloudWatchLogsLogGroup:
-              LogGroupArn: !GetAtt LogGroup.Arn
       Events:
         S3Event:
           Type: CloudWatchEvent
@@ -46,7 +37,7 @@ Resources:
               source:
                 - aws.s3
               detail-type:
-                - "Object Created"
+                - Object Created
               detail:
                 bucket:
                   name:
@@ -54,146 +45,101 @@ Resources:
                 object:
                   key:
                     - wildcard: upload/*
+      DefinitionUri: ../out/state_machine.json
 
-  Function:
-      Type: AWS::Serverless::Function
-      Metadata:
-        BuildMethod: rust-cargolambda
-      Properties:
-        FunctionName: core-aws-authorizer
-        Description: Handles JWT authentication for API Gateway endpoints.
-        VersionDescription: 0.0.1
-        CodeUri: ../src/api/lambda
-        Handler: bootstrap
-        Runtime: provided.al2
-        MemorySize: 1024
-        Timeout: 900
-        Environment:
-          Variables:
-            TIKI_JWK: '{"kty":"EC","use":"sig","crv":"P-256","kid":"0d2dbad0-81f5-4625-94a8-91e839581ac8","x":"vcM5IpNurycR5RbOGueTZAWp-FQfAwGUTVY1YwNli_c","y":"-Ag2sVft6NAcSxkvHc2gS5vcB3bdrB66pDPFuS_6u1U","alg":"ES256"}'
-            TIKI_ISSUER: https://mytiki.com
-        Tracing: Active
-        Architectures:
-          - x86_64
-        AutoPublishAlias: latest
-        # ProvisionedConcurrencyConfig:
-        #   ProvisionedConcurrentExecutions: 2
-        Policies:
-          - Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - xray:PutTraceSegments
-                  - xray:PutTelemetryRecords
-                Resource: "*"
-
-  Api:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: !Ref Name
-      
-      StageName: latest
-      TracingEnabled: true
-      MethodSettings:
-      - LoggingLevel: ERROR
-        ResourcePath: '/*'
-        HttpMethod: '*'
-        DataTraceEnabled: true
-        MetricsEnabled: true
-      Auth:
-        Authorizers:
-          CoreAwsAuthorizer:
-            DisableFunctionDefaultPermissions: True
-            FunctionArn: !Ref Authorizer
-            FunctionPayloadType: REQUEST
-            Identity:
-              Headers:
-                - Authorization
-      BinaryMediaTypes:
-        - image/png
-        - image/jpg
-        - image/jpeg
-      Cors:
-        AllowMethods: "'POST, OPTIONS, GET'"
-        AllowHeaders: "'Content-Type, User-Agent, Authorization'"
-        AllowOrigin: "'*'"
-      DefinitionBody:
-        Fn::Transform:
-          Name: AWS::Include
-          Parameters:
-            Location: ../src/api/openapi.yaml
-        
-  LogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Ref Name
-      RetentionInDays: 30
-
-  Role:
+  StateMachineRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Ref Name
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
-            Action: sts:AssumeRole
             Principal:
-              Service:
-                - states.amazonaws.com
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
       Policies:
         - PolicyName: XRay
           PolicyDocument:
-            Version: 2012-10-17
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
-                Resource: "*"
                 Action:
                   - xray:PutTraceSegments
                   - xray:PutTelemetryRecords
                   - xray:GetSamplingRules
                   - xray:GetSamplingTargets
-        - PolicyName: CloudWatch
+                Resource: '*'
+        - PolicyName: Logs
           PolicyDocument:
-            Version: 2012-10-17
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
-                Resource: "*"
                 Action:
-                  - logs:CreateLogDelivery
+                  - logs:CreateLogGroup
                   - logs:CreateLogStream
-                  - logs:GetLogDelivery
-                  - logs:UpdateLogDelivery
-                  - logs:DeleteLogDelivery
-                  - logs:ListLogDeliveries
+                  - logs:GetLogEvents
                   - logs:PutLogEvents
-                  - logs:PutResourcePolicy
-                  - logs:DescribeResourcePolicies
+                Resource: '*'
+              - Effect: Allow
+                Action:
                   - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                Resource: '*'
         - PolicyName: S3
           PolicyDocument:
-            Version: 2012-10-17
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
-                Resource: !Sub ${Bucket.Arn}/*
                 Action:
                   - s3:PutObject
                   - s3:GetObject
                   - s3:GetObjectVersion
+                Resource: !Sub ${Bucket.Arn}/*
         - PolicyName: Textract
           PolicyDocument:
-            Version: 2012-10-17
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
-                Resource: "*"
                 Action:
                   - textract:AnalyzeExpense
-  
-  ConfigLambdaPermission:
-    Type: "AWS::Lambda::Permission"
-    DependsOn:
-      - Function
+                Resource: '*'
+
+  Api:
+    Type: AWS::Serverless::Api
     Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: core-aws-authorizer
-      Principal: apigateway.amazonaws.com
+      Name: !Ref Name
+      StageName: latest
+      TracingEnabled: true
+      MethodSettings:
+        - LoggingLevel: INFO
+          ResourcePath: "/*"
+          HttpMethod: "*"
+          DataTraceEnabled: true
+          MetricsEnabled: true
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: ../openapi.yaml
+
+  ApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
+      Policies:
+        - PolicyName: S3
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: !Sub ${Bucket.Arn}/*
