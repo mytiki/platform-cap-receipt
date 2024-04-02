@@ -1,9 +1,11 @@
+use lambda_http::{run, service_fn, tracing, Body, Error, Request, RequestExt, Response};
+
 async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
   let resp = Response::builder()
       .status(404)
       .header("content-type", "text/plain")
-      .body({Body::from("NOT IMPLEMENTED")})
-  Ok(resp)
+      .body(Body::from("NOT IMPLEMENTED"));
+  Ok(resp?)
 }
 
 #[tokio::main]
