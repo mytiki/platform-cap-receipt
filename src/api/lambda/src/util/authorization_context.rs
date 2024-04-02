@@ -33,7 +33,7 @@ impl AuthorizationContext {
             .collect();
         let (provider, address) = match id {
             Some(id) => {
-                let split = id.split("/").collect::<Vec<&str>>();
+                let split = id.split(":").collect::<Vec<&str>>();
                 let provider = split.get(0).map_or(None, |v| Some(v.to_string()));
                 let id = split.get(1).map_or(None, |v| Some(v.to_string()));
                 (provider, id)
