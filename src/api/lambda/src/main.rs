@@ -42,14 +42,21 @@ async fn main() -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use super::*;
-    use lambda_http::{http::StatusCode, Context};
-    use serde_json::to_string;
+    use lambda_http::{aws_lambda_events::query_map::QueryMap, http::StatusCode};
 
     #[tokio::test]
     async fn test_function_handler() {
         let request = Request::new(
-          Body::Text(r#"{"eyJ0ZXN0IjoiYm9keSJ9"}"#.to_string()))
+          Body::Binary(vec![]))
+          .with_path_parameters({
+            let mut hashMap: HashMap<String,String> = HashMap::new();
+            hashMap.insert("receipt_id".to_string(),"test".to_string());
+            QueryMap::from(hashMap)
+          }
+          )
           .with_lambda_context(
             serde_json::from_str(r#"
             {
