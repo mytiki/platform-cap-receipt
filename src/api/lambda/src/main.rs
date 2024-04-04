@@ -8,19 +8,19 @@ use util::{authorization_context::AuthorizationContext, input_data::InputData};
 
 async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     let context = AuthorizationContext::new(&event.request_context()).unwrap();
-    let provider = context.provider().as_ref().clone().unwrap();
-    let address = context.address().as_ref().clone().unwrap();
+    let path = context.id();
     let receipt_id = event
         .path_parameters()
-        .first("receipt_id")
+        .first("receiptId")
         .unwrap()
         .to_owned();
-    let results = s3::get(provider, address, &receipt_id).await.unwrap();
+    let results = s3::get(path, &receipt_id).await.unwrap();
     let formatted: Vec<String> = results
         .iter()
         .map(|result| {
             let input: InputData = serde_json::from_str(result).unwrap();
             let json = format::process(input).unwrap();
+            println!("{}", json);
             json
         })
         .collect();

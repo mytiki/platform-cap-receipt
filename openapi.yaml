@@ -37,7 +37,7 @@ paths:
           Fn::GetAtt: ApiRole.Arn
         httpMethod: "PUT"
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:s3:path/mytiki-${AWS::Region}-${Name}/upload/{address}/{receiptId}/{requestId}
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:s3:path/${Bucket}/upload/{address}/{receiptId}/{requestId}
         responses:
           default:
             statusCode: "200"

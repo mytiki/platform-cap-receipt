@@ -25,7 +25,9 @@ pub fn process(data: InputData) -> Result<String, Box<dyn Error>> {
       line_item_groups: processed_line_item_groups, 
       summary_fields:  processed_summary_fields
     };
-    Ok(serde_json::to_string(&result)?)
+    let json_string = serde_json::to_string(&result)?;
+    
+    Ok(json_string)
 }
 
 

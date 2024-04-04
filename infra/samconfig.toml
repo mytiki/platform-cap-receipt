@@ -2,7 +2,7 @@ version = 0.1
 
 [default.global.parameters]
 stack_name = "publish-data-receipt"
-s3_bucket = "mytiki-core-ocean-cf-deploy"
+s3_bucket = "com.mytiki.core.bucket"
 s3_prefix = "publish/data/receipt"
 region = "us-east-2"
 
