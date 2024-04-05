@@ -15,7 +15,7 @@ pub async fn get(path: &String, receipt_id: &String) -> Result<Vec<String>, Erro
   let client_ref = &client;
 
   let list: Vec<String> = client_ref.get_file_list(
-    format!("arn:aws:s3:::{bucket}/result/{path}/{receipt_id}").as_str()).await?;
+    &bucket, format!("result/{}/{}", path, receipt_id).as_str()).await?;
   
   let mut results = vec![];
 

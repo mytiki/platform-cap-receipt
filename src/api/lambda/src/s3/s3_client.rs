@@ -9,7 +9,7 @@ pub trait GetFile {
 
 #[async_trait]
 pub trait GetFileList {
-    async fn get_file_list(&self, bucket: &str) -> Result<Vec<String>, ListObjectsV2Error>;
+    async fn get_file_list(&self, bucket: &str, path: &str) -> Result<Vec<String>, ListObjectsV2Error>;
 }
 
 #[async_trait]
@@ -35,12 +35,13 @@ impl GetFile for S3Client {
 
 #[async_trait]
 impl GetFileList for S3Client {
-    async fn get_file_list(&self, bucket: &str) -> Result<Vec<String>, ListObjectsV2Error> {
-      tracing::info!("get file list bucket {}", bucket);
+    async fn get_file_list(&self, bucket: &str, path: &str) -> Result<Vec<String>, ListObjectsV2Error> {
+      tracing::info!("get file list bucket {} / {}", bucket, path);
       let mut json_list: Vec<String> = Vec::new();
       let mut response = self
           .list_objects_v2()
           .bucket(bucket.to_owned())
+          .prefix(path.to_owned())
           .max_keys(10)
           .into_paginator()
           .send();
