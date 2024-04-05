@@ -51,9 +51,9 @@ mod tests {
         let request = Request::new(
           Body::Binary(vec![]))
           .with_path_parameters({
-            let mut hashMap: HashMap<String,String> = HashMap::new();
-            hashMap.insert("receipt_id".to_string(),"test".to_string());
-            QueryMap::from(hashMap)
+            let mut hash_map: HashMap<String,String> = HashMap::new();
+            hash_map.insert("receipt_id".to_string(),"test".to_string());
+            QueryMap::from(hash_map)
           }
           )
           .with_lambda_context(
