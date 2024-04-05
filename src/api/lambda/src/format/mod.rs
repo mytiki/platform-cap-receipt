@@ -5,9 +5,8 @@
 
 use std::error::Error;
 
-use lambda_http::aws_lambda_events::apigw::serialize_authorizer_fields;
 
-use crate::{util::{input_data::{self, InputData}, output_data::OutputData}};
+use crate::util::{input_data::InputData, output_data::OutputData};
 
 pub mod block;
 pub mod geometry;
@@ -15,7 +14,7 @@ pub mod line_item;
 pub mod summary;
 pub mod type_class;
 
-pub fn process(data: InputData) -> Result<String, Box<dyn Error>> {
+pub fn process(data: InputData) -> Result<OutputData, Box<dyn Error>> {
     let processed_blocks = block::process(&data.expense_documents[0].blocks);
 
     let processed_line_item_groups = line_item::process(&data.expense_documents[0].line_item_groups);
@@ -27,7 +26,7 @@ pub fn process(data: InputData) -> Result<String, Box<dyn Error>> {
       line_item_groups: processed_line_item_groups, 
       summary_fields:  processed_summary_fields
     };
-    let json_string = serde_json::to_string(&result)?;
+    let json_string = result;
     
     Ok(json_string)
 }
@@ -13511,7 +13510,7 @@ fn test_process() {
   "#;
   let inputData: InputData = serde_json::from_str(json).unwrap();
   let outputData = process(inputData);
-  println!("{:?}", outputData);
+  println!("ok")
 }
 
     

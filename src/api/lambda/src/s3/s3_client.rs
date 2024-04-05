@@ -50,10 +50,10 @@ impl GetFileList for S3Client {
           Ok(output) => {
               tracing::info!("output {:?}", output.key_count.unwrap_or_default());
               for object in output.contents.unwrap_or_default() {
-                  let key = object.key.unwrap();
-                  let byte = self.get_file(bucket, key).await.unwrap();
+                  let key = &object.key.unwrap();
+                  let byte = self.get_file(bucket, key.clone()).await.unwrap();
                   let json_file: String = String::from_utf8(byte).unwrap();
-                  tracing::info!("get json file {}", json_file);
+                  tracing::info!("get json file worked {}/{}", bucket, key.clone());
                   json_list.push(json_file);
               }
           }

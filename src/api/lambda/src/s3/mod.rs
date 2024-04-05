@@ -5,7 +5,7 @@ use std::env;
 
 use aws_sdk_s3::Client as S3Client;
 use lambda_http::lambda_runtime::Error;
-use s3_client::{GetFile, GetFileList};
+use s3_client::GetFileList;
 
 pub async fn get(path: &String, receipt_id: &String) -> Result<Vec<String>, Error> {
   
@@ -14,16 +14,8 @@ pub async fn get(path: &String, receipt_id: &String) -> Result<Vec<String>, Erro
   let client = S3Client::new(&shared_config);
   let client_ref = &client;
 
-  let list: Vec<String> = client_ref.get_file_list(
+  let results: Vec<String> = client_ref.get_file_list(
     &bucket, format!("result/{}/{}", path, receipt_id).as_str()).await?;
-  
-  let mut results = vec![];
-
-  for obj in list {
-    let file = client_ref.get_file(&bucket, obj.clone()).await?;
-    let json_str = String::from_utf8(file)?;
-    results.push(json_str);
-  }
   
   Ok(results)
 

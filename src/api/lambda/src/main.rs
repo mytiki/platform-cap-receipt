@@ -4,7 +4,7 @@ mod util;
 
 use lambda_http::{run, service_fn, tracing, Body, Error, Request, RequestExt, Response};
 use serde_json::json;
-use util::{authorization_context::AuthorizationContext, input_data::InputData};
+use util::{authorization_context::AuthorizationContext, input_data::InputData, output_data::OutputData};
 
 async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     let context = AuthorizationContext::new(&event.request_context()).unwrap();
@@ -15,12 +15,11 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
         .unwrap()
         .to_owned();
     let results = s3::get(path, &receipt_id).await.unwrap();
-    let formatted: Vec<String> = results
+    let formatted: Vec<OutputData> = results
         .iter()
         .map(|result| {
             let input: InputData = serde_json::from_str(result).unwrap();
             let json = format::process(input).unwrap();
-            println!("{}", json);
             json
         })
         .collect();
