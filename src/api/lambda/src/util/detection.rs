@@ -10,7 +10,7 @@ use crate::format::geometry::geometry::Geometry;
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Detection {
-    pub confidence: f64,
+    pub confidence: Option<f64>,
     pub geometry: Geometry,
-    pub text: String,
+    pub text: Option<String>,
 }

@@ -74,6 +74,6 @@ fn test_process_blocks_json() {
     let result = process(&vec![block]);
 
     assert_eq!(result.len(), 1);
-    assert_eq!(result[0].confidence, 99.76323);
-    assert_eq!(result[0].text, "to win $1000");
+    assert_eq!(result[0].confidence.unwrap(), 99.76323);
+    assert_eq!(result[0].text, Some("to win $1000".to_string()));
 }

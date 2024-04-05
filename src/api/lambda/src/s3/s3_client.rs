@@ -47,10 +47,12 @@ impl GetFileList for S3Client {
       while let Some(result) = response.next().await {
         match result {
           Ok(output) => {
+              tracing::info!("output {:?}", output.key_count.unwrap_or_default());
               for object in output.contents.unwrap_or_default() {
                   let key = object.key.unwrap();
                   let byte = self.get_file(bucket, key).await.unwrap();
                   let json_file: String = String::from_utf8(byte).unwrap();
+                  tracing::info!("get json file {}", json_file);
                   json_list.push(json_file);
               }
           }

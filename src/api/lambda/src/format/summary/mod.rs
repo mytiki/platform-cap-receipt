@@ -19,28 +19,36 @@ pub fn process(summary_fields: &[SummaryField]) -> Vec<HashMap<String, FieldResp
       .map(|summary_field| {
           let mut summary_map = HashMap::new();
 
-          let key = match summary_field.summary_field_type.as_ref().map(|t| t.text.as_str()) {
-              Some("OTHER") => summary_field.label_detection.as_ref().map_or("", |ld| ld.text.as_str()).to_string(),
-              _ => summary_field.summary_field_type.as_ref().map_or("", |t| t.text.as_str()).to_string(),
+          let key = match summary_field
+            .summary_field_type{
+              Some(ref summary_field_type) => summary_field_type.text.as_ref().unwrap().to_owned(),
+              None => {
+                if summary_field.label_detection.is_some() {
+                  "OTHER"
+                } else {
+                  ""
+                }
+              }.to_owned()
           };
 
           let confidence_key = match summary_field.summary_field_type {
-              Some(ref summary_field_type) => summary_field_type.confidence as f64, // Changed to f64
-              None => summary_field.label_detection.as_ref().map_or(0.0, |ld| ld.confidence as f64), // Changed to f64
+              Some(ref summary_field_type) => summary_field_type.confidence.unwrap_or(0.00) as f64, // Changed to f64
+              None => summary_field.label_detection.as_ref().map_or(0.0, |ld| ld.confidence.unwrap_or(0.00) as f64), // Changed to f64
           };
 
           summary_map.insert(
               key,
               FieldResponse {
                   confidence_key,
-                  confidence_value: summary_field.value_detection.confidence,
-                  value: summary_field.value_detection.text.clone(),
+                  confidence_value: summary_field.value_detection.confidence.unwrap_or(0.00),
+                  value: summary_field.value_detection.text.clone().unwrap(),
               },
           );
 
           summary_map
       })
       .collect()
+
 }
 
 

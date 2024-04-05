@@ -37,24 +37,24 @@ pub fn process(line_item_groups: &Vec<Group>) -> Vec<GroupResponse> {
                                     expense_row: None,
                                     price: None,
                                 };
-                                match field.line_item_expense_field_type.text.as_str() {
+                                match field.line_item_expense_field_type.text.clone().unwrap().as_str() {
                                     "PRODUCT_CODE" => {
                                         expense_field.product_code =
                                             Some(FieldResponse {
                                                 confidence_key: field
                                                     .line_item_expense_field_type
-                                                    .confidence,
-                                                confidence_value: field.value_detection.confidence,
-                                                value: field.value_detection.text.clone(),
+                                                    .confidence.unwrap_or(0.00),
+                                                confidence_value: field.value_detection.confidence.unwrap_or(0.00),
+                                                value: field.value_detection.text.clone().unwrap(),
                                             })
                                     }
                                     "ITEM" => {
                                         expense_field.item = Some(FieldResponse {
                                             confidence_key: field
                                                 .line_item_expense_field_type
-                                                .confidence,
-                                            confidence_value: field.value_detection.confidence,
-                                            value: field.value_detection.text.clone(),
+                                                .confidence.unwrap_or(0.00),
+                                            confidence_value: field.value_detection.confidence.unwrap_or(0.00),
+                                            value: field.value_detection.text.clone().unwrap(),
                                         })
                                     }
                                     "EXPENSE_ROW" => {
@@ -62,18 +62,18 @@ pub fn process(line_item_groups: &Vec<Group>) -> Vec<GroupResponse> {
                                             Some(FieldResponse {
                                                 confidence_key: field
                                                     .line_item_expense_field_type
-                                                    .confidence,
-                                                confidence_value: field.value_detection.confidence,
-                                                value: field.value_detection.text.clone(),
+                                                    .confidence.unwrap_or(0.00),
+                                                confidence_value: field.value_detection.confidence.unwrap_or(0.00),
+                                                value: field.value_detection.text.clone().unwrap(),
                                             })
                                     }
                                     "PRICE" => {
                                         expense_field.price = Some(FieldResponse {
                                             confidence_key: field
                                                 .line_item_expense_field_type
-                                                .confidence,
-                                            confidence_value: field.value_detection.confidence,
-                                            value: field.value_detection.text.clone(),
+                                                .confidence.unwrap_or(0.00),
+                                            confidence_value: field.value_detection.confidence.unwrap_or(0.00),
+                                            value: field.value_detection.text.clone().unwrap(),
                                         })
                                     }
                                     _ => {} // Handling other cases if needed
