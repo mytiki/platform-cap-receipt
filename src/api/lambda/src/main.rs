@@ -7,29 +7,51 @@ use serde_json::json;
 use util::{authorization_context::AuthorizationContext, input_data::InputData, output_data::OutputData};
 
 async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
-    let context = AuthorizationContext::new(&event.request_context()).unwrap();
-    let path = context.id();
-    let receipt_id = event
-        .path_parameters()
-        .first("receiptId")
-        .unwrap()
-        .to_owned();
-    let results = s3::get(path, &receipt_id).await.unwrap();
-    let formatted: Vec<OutputData> = results
-        .iter()
-        .map(|result| {
-            let input: InputData = serde_json::from_str(result).unwrap();
-            let json = format::process(input).unwrap();
-            json
-        })
-        .collect();
-    let result = json!(formatted).to_string();
-    let resp = Response::builder()
-        .status(200)
-        .header("content-type", "application/json")
-        .body(Body::from(result))
-        .map_err(Box::new)?;
-    Ok(resp)
+  let context = AuthorizationContext::new(&event.request_context()).unwrap();
+  let path = context.id();
+  let receipt_id = match event.path_parameters().first("receiptId") {
+      Some(id) => id.to_owned(),
+      None => return error_response(400, "Missing receiptId parameter"),
+  };
+  let results = s3::get(path, &receipt_id).await;
+  match results {
+    Err(err) => return error_response(404, &format!("No results found - {}", err)),
+    Ok(results) => {
+      let formatted: Vec<OutputData> = results.iter().filter_map(|result| {
+        let input = serde_json::from_str(result);
+        match input {
+            Err(err) => {
+                None
+            },
+            Ok(input) => {
+                let output_data = format::process(input);
+                match output_data {
+                    Ok(out) => Some(out),
+                    Err(err) => {
+                        None
+                    }
+                }
+            }
+        }
+      }).collect();
+      let result = json!(formatted).to_string();
+      let resp = Response::builder()
+          .status(200)
+          .header("content-type", "application/json")
+          .body(Body::from(result))
+          .map_err(Box::new)?;
+      return Ok(resp)
+    }
+  };
+}
+
+fn error_response(status_code: u16, error_message: &str) -> Result<Response<Body>, Error> {
+  let resp = Response::builder()
+      .status(status_code)
+      .header("content-type", "application/json")
+      .body(Body::from(format!("{{\"error\": \"{}\"}}", error_message)))
+      .map_err(Box::new)?;
+  Ok(resp)
 }
 
 #[tokio::main]
