@@ -12,7 +12,7 @@ Parameters:
   BucketName:
     Description: The name of the bucket to be used to store the receipts uploads and results.
     Type: String
-    Default: publish-bucket
+    Default: publish-receipt
 
 Resources:
   Bucket:
@@ -54,6 +54,7 @@ Resources:
   StateMachineRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub ${Name}-state-machine-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -115,7 +116,7 @@ Resources:
     Properties:
       FunctionName: !Sub ${Name}-get
       Description: Retrieves the extracted receipt data.
-      CodeUri: ../src/api/lambda
+      CodeUri: ../src/get_receipt
       Handler: bootstrap
       Runtime: provided.al2
       MemorySize: 1024
@@ -179,6 +180,7 @@ Resources:
   ApiRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub ${Name}-api-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:

@@ -8,7 +8,7 @@ servers:
     basePath:
       default: "latest"
 paths:
-  /receipt/{receiptId}:
+  /{receiptId}:
     post:
       parameters:
       - name: "receiptId"
