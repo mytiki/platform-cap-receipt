@@ -8,7 +8,7 @@ servers:
     basePath:
       default: "latest"
 paths:
-  /receipt/{receiptId}:
+  /{receiptId}:
     post:
       parameters:
       - name: "receiptId"
@@ -37,7 +37,7 @@ paths:
           Fn::GetAtt: ApiRole.Arn
         httpMethod: "PUT"
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:s3:path/mytiki-${AWS::Region}-${Name}/upload/{address}/{receiptId}/{requestId}
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:s3:path/${Bucket}/upload/{address}/{receiptId}/{requestId}
         responses:
           default:
             statusCode: "200"
@@ -53,6 +53,21 @@ paths:
           integration.request.path.requestId: "context.requestId"
         passthroughBehavior: "when_no_templates"
         type: "aws"
+    get:
+      parameters:
+      - name: "receiptId"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      security:
+      - CoreAwsAuthorizer: []
+      x-amazon-apigateway-integration:
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
     options:
       parameters:
       - name: "receiptId"
@@ -91,6 +106,8 @@ paths:
           application/json: "{statusCode : 200}"
         passthroughBehavior: "when_no_match"
         type: "mock"
+
+
 components:
   securitySchemes:
     CoreAwsAuthorizer:

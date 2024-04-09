@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: Publish receipt data.
 Parameters:
@@ -9,13 +9,16 @@ Parameters:
   Authorizer:
     Description: The ARN of the Lambda function for JWT Request authorization.
     Type: String
-
+  BucketName:
+    Description: The name of the bucket to be used to store the receipts uploads and results.
+    Type: String
+    Default: publish-receipt
 
 Resources:
   Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub mytiki-ocean-${AWS::Region}-${Name}
+      BucketName: !Sub mytiki-${AWS::Region}-${BucketName}
       NotificationConfiguration:
         EventBridgeConfiguration:
           EventBridgeEnabled: true
@@ -51,8 +54,9 @@ Resources:
   StateMachineRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub ${Name}-state-machine-role
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -61,7 +65,7 @@ Resources:
       Policies:
         - PolicyName: XRay
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -69,10 +73,10 @@ Resources:
                   - xray:PutTelemetryRecords
                   - xray:GetSamplingRules
                   - xray:GetSamplingTargets
-                Resource: '*'
+                Resource: "*"
         - PolicyName: Logs
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -80,15 +84,15 @@ Resources:
                   - logs:CreateLogStream
                   - logs:GetLogEvents
                   - logs:PutLogEvents
-                Resource: '*'
+                Resource: "*"
               - Effect: Allow
                 Action:
                   - logs:DescribeLogGroups
                   - logs:DescribeLogStreams
-                Resource: '*'
+                Resource: "*"
         - PolicyName: S3
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -98,12 +102,62 @@ Resources:
                 Resource: !Sub ${Bucket.Arn}/*
         - PolicyName: Textract
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
                   - textract:AnalyzeExpense
-                Resource: '*'
+                Resource: "*"
+
+  GetFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+    Properties:
+      FunctionName: !Sub ${Name}-get
+      Description: Retrieves the extracted receipt data.
+      CodeUri: ../src/get_receipt
+      Handler: bootstrap
+      Runtime: provided.al2
+      MemorySize: 1024
+      Timeout: 900
+      Environment:
+        Variables:
+          TIKI_BUCKET: !Ref Bucket
+      Tracing: Active
+      Architectures:
+        - x86_64
+      AutoPublishAlias: latest
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - xray:PutTraceSegments
+                - xray:PutTelemetryRecords
+              Resource: "*"
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:GetObjectVersion
+              Resource: !Sub ${Bucket.Arn}/*
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:ListBucket
+              Resource: !Sub ${Bucket.Arn}
+
+  ConfigGetFunctionPermission:
+    Type: "AWS::Lambda::Permission"
+    DependsOn:
+      - GetFunction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Sub ${Name}-get
+      Principal: apigateway.amazonaws.com
 
   Api:
     Type: AWS::Serverless::Api
@@ -126,21 +180,30 @@ Resources:
   ApiRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub ${Name}-api-role
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
               Service: apigateway.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
+        - "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
       Policies:
         - PolicyName: S3
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
                   - s3:PutObject
                 Resource: !Sub ${Bucket.Arn}/*
+        - PolicyName: GetFunction
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: !Sub ${GetFunction.Arn}

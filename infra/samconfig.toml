@@ -13,5 +13,13 @@ capabilities = [
     "CAPABILITY_NAMED_IAM",
     "CAPABILITY_AUTO_EXPAND"
 ]
+
+
+[default.build.parameters]
+beta_features = true
+
+[default.sync.parameters]
+beta_features = true
+
 image_repositories = []
 parameter_overrides = []
