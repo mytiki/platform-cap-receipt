@@ -1,0 +1,39 @@
+# Reference: https://github.com/repository-settings/app
+
+_extends: .github
+
+repository:
+  name: platform-cap-receipt
+  description: Upload receipts for free OCR processing
+  homepage: https://mytiki.com/solutions/receipt-ocr
+  topics: capture, receipt, ocr
+  private: false
+  has_projects: true
+  has_discussions: false
+  has_issues: true
+
+teams:
+  - name: sysadmin
+    permission: admin
+  - name: engineering
+    permission: push
+  - name: product
+    permission: triage
+  - name: backend
+    permission: push
+
+environments:
+  - name: production
+
+branches:
+  - name: main
+    protection:
+      required_status_checks:
+        strict: true
+        contexts: []
+
+milestones:
+  - title: 0.0.1
+    description: |
+      DRAFT
+    state: open
